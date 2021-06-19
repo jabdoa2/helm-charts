@@ -1,0 +1,27 @@
+image:
+  registry: docker.pkg.github.com
+  repository: jabdoa/backuppc-remote
+  tag: "14"
+  pullPolicy: IfNotPresent
+
+podAnnotations: {}
+
+resources: {}
+
+data:
+  volumeClaimName: None
+
+ssh:
+  authorizedKey: None
+
+sshd:
+  sshHostEd25519Key: None
+  sshHostEd25519KeyPub: None
+
+mysql:
+  host: None
+  port: "3306"
+  user: "root"
+  password: ""
+  passwordSecret: None
+  passwordSecretKey: None

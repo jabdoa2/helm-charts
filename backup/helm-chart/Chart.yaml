@@ -1,0 +1,5 @@
+apiVersion: v2
+appVersion: 1.0.0
+description: A Helm chart as remote for backuppc to backup MySQL databases using mysqldump and rsync pvcs
+name: backuppc-remote
+version: 1.0.0

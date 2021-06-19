@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "backuppc-remote.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "backuppc-remote.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "backuppc-remote.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "backuppc-remote.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if .Values.podAnnotations }}
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+{{- include "backuppc-remote.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: {{ template "backuppc-remote.fullname" . }}
+        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+        env:
+        - name: MYSQL_HOST
+          value: {{ .Values.mysql.host | quote }}
+        - name: MYSQL_PORT
+          value: {{ .Values.mysql.port | quote }}
+        - name: MYSQL_USER
+          value: {{ .Values.mysql.user | quote }}
+        - name: MYSQL_PASS
+{{- if .Values.mysql.password }}
+          value: {{ .Values.mysql.password | quote }}
+{{- else }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.mysql.passwordSecret | quote }}
+              key: {{ .Values.mysql.passwordSecretKey | quote }}
+{{- end }}
+        ports:
+        - name: ssh
+          containerPort: 22
+        readinessProbe:
+          tcpSocket:
+            port: 22
+          initialDelaySeconds: 5
+          timeoutSeconds: 3
+          periodSeconds: 5
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts:
+        - name: backup-data
+          mountPath: /data/volume
+          readOnly: true
+          #        - name: backup-script
+          #          mountPath: /root/backup-mysql.sh
+          #          subPath: script.sh
+          #          readOnly: true
+        - name: authorized-keys
+          mountPath: /root/.ssh/authorized_keys
+          subPath: authorizedKeys
+          readOnly: true
+        - name: ssh-key
+          mountPath: /keys
+          readOnly: true
+      volumes:
+      - name: backup-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.data.volumeClaimName | quote }}
+      - name: backup-script
+        configMap:
+          name: {{ template "backuppc-remote.fullname" . }}-script
+          defaultMode: 0777
+      - name: authorized-keys
+        configMap:
+          name: {{ template "backuppc-remote.fullname" . }}-authorized-keys
+          defaultMode: 256
+      - name: ssh-key
+        secret:
+          secretName: {{ template "backuppc-remote.fullname" . }}-ssh-secrets
+          defaultMode: 256
+

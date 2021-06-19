@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "backuppc-remote.fullname" . }}-authorized-keys
+data:
+  authorizedKeys: {{ .Values.ssh.authorizedKey | quote}}
+
